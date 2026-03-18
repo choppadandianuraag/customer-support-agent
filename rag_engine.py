@@ -84,7 +84,7 @@ class RAGEngine:
         pdf_path: Optional[str] = None,
         hf_token: Optional[str] = None,
         embedding_model: str = "BAAI/bge-large-en-v1.5",
-        llm_model: str = "Qwen/Qwen2.5-72B-Instruct"
+        llm_model: str = "Qwen/Qwen2.5-7B-Instruct"
     ):
         self.pdf_path = pdf_path or os.environ.get("PDF_PATH", "faqdata.pdf")
         token = hf_token or os.environ.get("HF_TOKEN")
