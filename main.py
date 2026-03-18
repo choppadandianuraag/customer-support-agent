@@ -4,16 +4,38 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import re, spacy, langdetect, asyncio
-from transformers import pipeline
-from rag_engine import RAGEngine
+import re, langdetect, asyncio
 from fastapi.responses import JSONResponse
 
+# --- Lazy globals (loaded on first request) ---
+_classifier = None
+_nlp = None
+_rag_engine = None
 
-classifier = pipeline(
-    "zero-shot-classification",
-    model="facebook/bart-large-mnli"
-)
+def get_classifier():
+    global _classifier
+    if _classifier is None:
+        from transformers import pipeline
+        print("Loading zero-shot classifier...")
+        _classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+    return _classifier
+
+def get_nlp():
+    global _nlp
+    if _nlp is None:
+        import spacy
+        print("Loading spaCy model...")
+        _nlp = spacy.load("en_core_web_sm")
+    return _nlp
+
+async def get_rag_engine():
+    global _rag_engine
+    if _rag_engine is None:
+        from rag_engine import RAGEngine
+        print("Initializing RAG engine...")
+        _rag_engine = RAGEngine()
+        await _rag_engine.initialize()
+    return _rag_engine
 
 app = FastAPI()
 
@@ -26,19 +48,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-nlp=spacy.load("en_core_web_sm")
-
-# Initialize RAG Engine
-rag_engine = RAGEngine()
-
 @app.get("/")
 def home():
     return {"message": "Running 🚀"}
-
-@app.on_event("startup")
-async def startup_event():
-    await rag_engine.initialize()
-    print("🚀 RAG Engine ready for FastAPI")
 
 class Email(BaseModel):
     subject: str
@@ -67,7 +79,7 @@ def clean_body(text: str) ->str:
     return text.strip()
 
 def extract_features(text:str)->dict:
-    doc = nlp(text)
+    doc = get_nlp()(text)
     entities = {}
     for ent in doc.ents:
         if ent.label_ == "PERSON":
@@ -100,7 +112,7 @@ def classify_intent(text):
         "general enquiry"
     ]
 
-    result = classifier(text, labels)
+    result = get_classifier()(text, labels)
 
     return {
         "intent": result["labels"][0],
@@ -134,7 +146,7 @@ DEPT_KEYWORDS = {
 
 def classify_department(text: str) -> dict:
     """Zero-shot department guess with keyword boost."""
-    result = classifier(text, DEPARTMENT_LABELS)
+    result = get_classifier()(text, DEPARTMENT_LABELS)
     top_label = result["labels"][0]
     top_score = result["scores"][0]
 
@@ -258,7 +270,8 @@ async def generate_reply(email: Email):
     
     # 3. RAG: Generate response
     name = prep["entities"].get("customer_name", "Valued Customer")
-    rag_result = await rag_engine.get_response(
+    engine = await get_rag_engine()
+    rag_result = await engine.get_response(
         query=prep["cleaned_body"],
         customer_name=name,
         email_subject=prep["subject"]
