@@ -1,0 +1,39 @@
+# Environment variables (NEVER commit secrets)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Vector store (generated, can be large)
+chroma_db/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+
+# PDF data files (may contain proprietary content)
+*.pdf
+
+# Testing artifacts
+.pytest_cache/
