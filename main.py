@@ -31,6 +31,10 @@ nlp=spacy.load("en_core_web_sm")
 # Initialize RAG Engine
 rag_engine = RAGEngine()
 
+@app.get("/")
+def home():
+    return {"message": "Running 🚀"}
+
 @app.on_event("startup")
 async def startup_event():
     await rag_engine.initialize()
@@ -266,4 +270,3 @@ async def generate_reply(email: Email):
         "confidence": rag_result["confidence"],
         "status": "success"
     }
-
