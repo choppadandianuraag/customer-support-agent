@@ -6,11 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import re, langdetect, asyncio
 from fastapi.responses import JSONResponse
+import os
 
 # --- Lazy globals (loaded on first request) ---
 _classifier = None
 _nlp = None
 _rag_engine = None
+_rag_lock = asyncio.Lock()  # Lock for thread-safe RAG initialization
 
 def get_classifier():
     global _classifier
@@ -30,12 +32,18 @@ def get_nlp():
 
 async def get_rag_engine():
     global _rag_engine
-    if _rag_engine is None:
-        from rag_engine import RAGEngine
-        print("Initializing RAG engine...")
-        _rag_engine = RAGEngine()
-        await _rag_engine.initialize()
-    return _rag_engine
+    async with _rag_lock:  # Prevent multiple concurrent initializations
+        if _rag_engine is None:
+            from rag_engine import RAGEngine
+            print("Initializing RAG engine...")
+            try:
+                engine = RAGEngine()
+                await engine.initialize()
+                _rag_engine = engine  # Only set global if initialization succeeds
+            except Exception as e:
+                print(f"❌ RAG Initialization failed: {str(e)}")
+                raise e
+        return _rag_engine
 
 app = FastAPI()
 
@@ -51,6 +59,16 @@ app.add_middleware(
 @app.get("/")
 def home():
     return {"message": "Running 🚀"}
+
+@app.get("/debug/env")
+def debug_env():
+    """Safely check for existence of required environment variables."""
+    return {
+        "HF_TOKEN_SET": os.environ.get("HF_TOKEN") is not None,
+        "GOOGLE_API_KEY_SET": os.environ.get("GOOGLE_API_KEY") is not None,
+        "PDF_PATH_SET": os.environ.get("PDF_PATH") is not None,
+        "ENV_KEYS": list(os.environ.keys())[:20]  # First 20 keys for context
+    }
 
 class Email(BaseModel):
     subject: str

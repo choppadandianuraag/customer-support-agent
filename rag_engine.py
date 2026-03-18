@@ -102,8 +102,13 @@ class RAGEngine:
     async def initialize(self):
         """Initialize all RAG components"""
         print("  🔧 Initializing RAG Engine components...")
+        self.chain = None  # Ensure state is reset for initialization attempt
         
         # 1. Load documents
+        if not os.path.exists(self.pdf_path):
+            print(f"  ❌ ERROR: PDF not found at {self.pdf_path}")
+            raise FileNotFoundError(f"PDF knowledge base not found at {self.pdf_path}. Please set PDF_PATH or ensure faqdata.pdf exists.")
+            
         print(f"  📄 Loading documents from: {self.pdf_path}")
         await self._load_documents()
         
@@ -126,7 +131,10 @@ class RAGEngine:
         # 5. Initialize LLM
         print(f"  🤖 Initializing LLM: {self.llm_model}")
         if not self.hf_token:
-            raise ValueError("HF_TOKEN not found. Set it in environment or pass to constructor.")
+            print("  ❌ ERROR: HF_TOKEN is missing from environment")
+            # Clear partially set instance if applicable
+            self.hf_client = None
+            raise ValueError("HF_TOKEN not found. Set it in environment secrets (HF Spaces) or .env file.")
         
         self.hf_client = InferenceClient(
             model=self.llm_model,
