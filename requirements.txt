@@ -1,21 +1,21 @@
 # Web framework
-fastapi==0.135.1
-uvicorn==0.41.0
-pydantic==2.12.5
+fastapi
+uvicorn[standard]
+pydantic
 python-dotenv
 
 # NLP & preprocessing
-spacy==3.8.11
-langdetect==1.0.9
-transformers==5.3.0
-torch==2.10.0
+spacy
+langdetect
+transformers
+torch --index-url https://download.pytorch.org/whl/cpu
 
 # LangChain RAG stack
-langchain==1.2.12
-langchain-core==1.2.19
+langchain
+langchain-core
 langchain-community
 langchain-text-splitters
-langchain-huggingface==1.2.1
+langchain-huggingface
 
 # Vector store & retrieval
 chromadb
@@ -23,10 +23,7 @@ rank-bm25
 
 # Embeddings & reranking
 sentence-transformers
-huggingface_hub==1.7.1
+huggingface_hub
 
 # PDF loading
 pypdf
-
-# spaCy model (install separately after pip install):
-# python -m spacy download en_core_web_sm
