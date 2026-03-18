@@ -1,5 +1,8 @@
 import os
 import re
+from dotenv import load_dotenv
+
+load_dotenv()
 from typing import List, Dict, Optional, AsyncGenerator
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
