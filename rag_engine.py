@@ -87,7 +87,8 @@ class RAGEngine:
         llm_model: str = "Qwen/Qwen2.5-72B-Instruct"
     ):
         self.pdf_path = pdf_path or os.environ.get("PDF_PATH", "faqdata.pdf")
-        self.hf_token = hf_token or os.environ.get("HF_TOKEN")
+        token = hf_token or os.environ.get("HF_TOKEN")
+        self.hf_token = token.strip().strip("'").strip('"') if token else None
         self.embedding_model = embedding_model
         self.llm_model = llm_model
 
@@ -266,18 +267,25 @@ class RAGEngine:
             ]
             
             try:
+                print(f"  🤖 Calling LLM ({self.llm_model})...")
                 response = self.hf_client.chat_completion(messages, max_tokens=1500, temperature=0.1)
                 
                 # Extract content from response
                 try:
                     content = response.choices[0].message["content"]
-                except (KeyError, TypeError):
-                    content = response.choices[0].message.content
+                except (KeyError, TypeError, AttributeError):
+                    try:
+                        content = response.choices[0].message.content
+                    except Exception:
+                        print(f"  ❌ Error parsing LLM response: {type(response)}")
+                        content = str(response)
                 
+                print("  ✅ LLM response received")
                 return content
             except Exception as e:
-                print(f"Error calling LLM: {str(e)}")
-                return f"I'm sorry, I'm having trouble generating a response right now. Please try again later or contact support."
+                print(f"  ❌ Error calling LLM Inference API: {type(e).__name__}: {str(e)}")
+                # If it's a 4xx error from HF, it's likely a token or model issue
+                return f"Internal Error: The AI service is currently unavailable ({type(e).__name__}). Please check the server logs for details."
 
 
 
