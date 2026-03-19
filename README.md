@@ -1,58 +1,92 @@
-# TechGear Email Support Bot 🤖
+# 🤖 TechGear — AI Customer Support Agent
 
-An intelligent, automated email support system for e-commerce built with **FastAPI**, **LangChain**, and a **Retrieval-Augmented Generation (RAG)** pipeline. The bot preprocesses inbound customer emails, classifies intent, routes to appropriate handlers, and generates policy-grounded email replies — or escalates to a human agent when needed.
+> An intelligent, end-to-end email support system that **reads**, **understands**, and **replies** to customer emails automatically — or escalates to a human when it should.
 
----
-
-## Features
-
-- **Email Preprocessing** — Cleans signatures/disclaimers, detects language, extracts entities (customer name, order ID, SKU, VIN)
-- **Intent Classification** — Zero-shot classification via `facebook/bart-large-mnli` (warranty, refund, shipping, billing, etc.)
-- **Smart Routing** — Auto-routes simple queries to the RAG bot; flags complex/critical cases for human review
-- **Department Detection** — Identifies the relevant product department using keyword-boosted zero-shot classification
-- **RAG Engine** — Hybrid retrieval (BM25 + ChromaDB vector search) with cross-encoder reranking, powered by `Qwen/Qwen2.5-72B-Instruct` via HuggingFace Inference API
-- **Policy-Grounded Replies** — Generates professional email replies strictly from the knowledge base (no hallucination)
-- **Escalation Handling** — Gracefully escalates to human support for critical or out-of-scope queries
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)](https://langchain.com)
+[![Hugging Face](https://img.shields.io/badge/HuggingFace-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co)
 
 ---
 
-## Architecture
+## 📺 Demo
+
+🎬 **[Watch the full demo video →](https://drive.google.com/file/d/1Is5FX_jLufm2EtXdaQNxvHVfvZ0fituc/view?usp=sharing)**
+
+🌐 **Live Backend:** [https://anuraagllm-customer-support-agent.hf.space](https://anuraagllm-customer-support-agent.hf.space)
+
+---
+
+## ⚙️ How It Works
+
+The system is orchestrated via **Make.com** (formerly Integromat). When a customer email arrives in Gmail, the automation pipeline kicks in:
+
+![Workflow](assets/workflow.png)
+
+**Pipeline at a glance:**
+
+1. **Gmail Trigger** — A new customer email arrives.
+2. **Email Preprocessing** — The email is sent to the FastAPI backend for cleaning, NER, intent classification, and routing.
+3. **Server Failure Check** — If the backend is down, a fallback email is sent and the event is logged.
+4. **AI or Human?** — Based on the routing decision:
+   - **AI Route →** The RAG engine generates a policy-grounded reply, which is sent back to the customer. The interaction is logged to Google Sheets.
+   - **Human Route →** The email is labelled, routed to the correct department, and a draft reply is created for a human agent. The event is logged separately.
+
+---
+
+## ✨ Key Features
+
+| Feature | Details |
+|---|---|
+| **Email Preprocessing** | Cleans signatures & disclaimers · Detects language · Extracts entities (name, order ID, SKU, VIN) |
+| **Intent Classification** | Zero-shot via `facebook/bart-large-mnli` — warranty, refund, shipping, billing, etc. |
+| **Smart Routing** | Auto-replies to simple queries · Escalates critical or complex cases to humans |
+| **Department Detection** | Keyword-boosted zero-shot classification across 9 product departments |
+| **RAG Engine** | Hybrid retrieval (BM25 + ChromaDB) with cross-encoder reranking → `Qwen2.5-72B-Instruct` |
+| **Policy-Grounded Replies** | Responses are strictly derived from the knowledge base — no hallucination |
+| **Escalation Handling** | Graceful handoff to human support for out-of-scope or high-risk queries |
+
+---
+
+## 🏗️ Architecture
 
 ```
 Incoming Email
      │
      ▼
 ┌─────────────┐    ┌──────────────────┐    ┌────────────────┐
-│  Preprocess │───▶│ Intent & Routing │───▶│  RAG Engine    │
-│  (clean,    │    │  Classification  │    │  (retrieve +   │
-│   NER, lang)│    │  (zero-shot LLM) │    │   rerank + LLM)│
+│  Preprocess  │──▶│ Intent & Routing  │──▶│   RAG Engine   │
+│  (clean,     │    │  Classification   │    │  (retrieve +   │
+│   NER, lang) │    │  (zero-shot LLM)  │    │  rerank + LLM) │
 └─────────────┘    └──────────────────┘    └────────────────┘
                             │                       │
-                    Human Escalation         Email Reply
+                    Human Escalation          Email Reply
 ```
 
-**RAG Pipeline detail:**
-1. PDF FAQ → chunked → embedded (`BAAI/bge-large-en-v1.5`) → ChromaDB
-2. BM25 (lexical) + ChromaDB (semantic) ensemble retrieval
-3. Cross-encoder reranking (`cross-encoder/ms-marco-MiniLM-L-6-v2`)
-4. Top-3 chunks → prompt → `Qwen2.5-72B-Instruct` → formatted email reply
+**RAG Pipeline:**
+
+1. **Ingest** — PDF FAQ → chunked → embedded with `BAAI/bge-large-en-v1.5` → stored in ChromaDB
+2. **Retrieve** — BM25 (lexical) + ChromaDB (semantic) ensemble retrieval
+3. **Rerank** — `cross-encoder/ms-marco-MiniLM-L-6-v2` scores and reorders results
+4. **Generate** — Top-3 chunks → prompt → `Qwen2.5-72B-Instruct` → formatted email reply
 
 ---
 
-## Setup
+## 🚀 Getting Started
 
 ### Prerequisites
+
 - Python 3.10+
-- A [HuggingFace](https://huggingface.co) account with an API token that has inference access
+- A [HuggingFace](https://huggingface.co) account with an API token (inference access)
 
 ### Installation
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+git clone https://github.com/choppadandianuraag/customer-support-agent.git
+cd customer-support-agent
 
-# Create and activate a virtual environment
+# Create & activate a virtual environment
 python -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
 
@@ -66,37 +100,46 @@ python -m spacy download en_core_web_sm
 ### Configuration
 
 ```bash
-# Copy the example env file and fill in your credentials
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` with your credentials:
 
 ```env
-GOOGLE_API_KEY=your_google_api_key_here   # Optional
 HF_TOKEN=your_huggingface_token_here      # Required
-PDF_PATH=/path/to/your/faqdata.pdf        # Optional, defaults to faqdata.pdf
+GOOGLE_API_KEY=your_google_api_key_here    # Optional
+PDF_PATH=/path/to/your/faqdata.pdf        # Optional — defaults to ./faqdata.pdf
 ```
 
-> **Important:** Place your FAQ knowledge base PDF as `faqdata.pdf` in the project root (or set `PDF_PATH` in `.env`).
+> **Note:** Place your FAQ knowledge base PDF as `faqdata.pdf` in the project root, or set `PDF_PATH` in `.env`.
 
-### Running the API
+### Run Locally
 
 ```bash
 uvicorn main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`.  
-Interactive docs: `http://localhost:8000/docs`
+The API will be available at **http://localhost:8000**
+Interactive docs at **http://localhost:8000/docs**
 
 ---
 
-## API Endpoints
+## 📡 API Endpoints
 
-### `POST /preprocess`
-Cleans and analyses an incoming email without generating a reply.
+### `GET /` — Health Check
 
-**Request body:**
+Returns `{"message": "Running 🚀"}`.
+
+---
+
+### `POST /preprocess` — Analyse an Email
+
+Cleans and analyses an incoming email **without** generating a reply.
+
+<details>
+<summary><strong>Example Request & Response</strong></summary>
+
+**Request:**
 ```json
 {
   "subject": "Issue with my order",
@@ -120,61 +163,67 @@ Cleans and analyses an incoming email without generating a reply.
   "department_confidence": null
 }
 ```
+</details>
 
 ---
 
-### `POST /generate-reply`
-Full pipeline: preprocess → route → RAG reply (or human escalation).
+### `POST /generate-reply` — Full Pipeline
 
-**Request body:** same as `/preprocess`
+Preprocess → Route → RAG reply (or human escalation).
 
-**Response (auto-replied):**
+<details>
+<summary><strong>Example Responses</strong></summary>
+
+**Auto-replied:**
 ```json
 {
-  "preprocess": { ... },
+  "preprocess": { "..." },
   "reply": "Re: Issue with my order\n\nHi John, ...",
   "confidence": 0.91,
   "status": "success"
 }
 ```
 
-**Response (escalated):**
+**Escalated:**
 ```json
 {
-  "preprocess": { ... },
+  "preprocess": { "..." },
   "reply": "Escalated to human support: potentially complex or critical content",
   "status": "escalated"
 }
 ```
+</details>
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 .
-├── main.py           # FastAPI app, email preprocessing, routing logic
-├── rag_engine.py     # RAG engine: embeddings, vector store, reranker, LLM chain
-├── test.py           # Basic tests
-├── test_hf.py        # HuggingFace inference tests
-├── requirements.txt  # Python dependencies
-├── .env.example      # Environment variable template
-└── faqdata.pdf       # Knowledge base PDF (not tracked in git)
+├── main.py             # FastAPI app — endpoints & RAG engine init
+├── preprocessing.py    # Email preprocessing — cleaning, NER, classification, routing
+├── rag_engine.py       # RAG engine — embeddings, vector store, reranker, LLM chain
+├── requirements.txt    # Python dependencies
+├── Dockerfile          # Container configuration
+├── .env.example        # Environment variable template
+├── faqdata.pdf         # Knowledge base PDF (not tracked in git)
+└── assets/
+    └── workflow.png    # Make.com automation workflow diagram
 ```
 
 ---
 
-## Environment Variables
+## 🔑 Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
 | `HF_TOKEN` | ✅ Yes | HuggingFace API token for LLM inference |
-| `GOOGLE_API_KEY` | ❌ Optional | Google Gemini API key (if using Gemini models) |
-| `PDF_PATH` | ❌ Optional | Absolute path to FAQ PDF (defaults to `./faqdata.pdf`) |
+| `GOOGLE_API_KEY` | ❌ No | Google Gemini API key (if using Gemini models) |
+| `PDF_PATH` | ❌ No | Path to FAQ PDF — defaults to `./faqdata.pdf` |
 
 ---
 
-## Tech Stack
+## 🧰 Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -187,9 +236,10 @@ Full pipeline: preprocess → route → RAG reply (or human escalation).
 | Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
 | LLM | `Qwen/Qwen2.5-72B-Instruct` via HuggingFace Inference API |
 | Orchestration | LangChain |
+| Automation | Make.com (Gmail + Google Sheets integration) |
 
 ---
 
-## License
+## 📄 License
 
 MIT
