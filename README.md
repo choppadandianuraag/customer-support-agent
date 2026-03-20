@@ -1,4 +1,4 @@
-# 🤖 TechGear — AI Customer Support Agent
+# AI Customer Support Agent
 
 > An intelligent, end-to-end email support system that **reads**, **understands**, and **replies** to customer emails automatically — or escalates to a human when it should.
 
